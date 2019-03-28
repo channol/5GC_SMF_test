@@ -1,0 +1,31 @@
+{
+    "svc_fqdn" : "172.17.0.2",
+    "svc_port" : 80,
+    "smf_id"   : "smf1",
+    "smf_array": [{
+                "svc_fqdn": "172.17.0.8",
+                "svc_port": 80,
+                "smf_id": "smf2"
+        }, {
+
+                "svc_fqdn": "172.17.0.6",
+                "svc_port": 80,
+                "smf_id": "smf3"
+        }, {
+
+                "svc_fqdn": "172.17.0.7",
+                "svc_port": 80,
+                "smf_id": "smf4"
+    }],
+    "bind"     : "eth0",
+    "upf_addr" : "162.13.10.42",
+    "n4_port"  : 8805,
+    "udm_svc_fqdn" : "172.17.0.3",
+    "udm_svc_port" :  8080,
+    "mgmt_svc_port" : 8586,
+    "simulator_mgmt_port"     : 8787,
+    "simulator_uri_root_path" : "smfsim",
+    "simulator_amf_api_root"  : "http://172.17.0.3:8686",
+    "simulator_chf_api_root"  : "http://172.17.0.3:5848",
+    "simulator_pcf_api_root"  : "http://172.17.0.3:8888"
+}
