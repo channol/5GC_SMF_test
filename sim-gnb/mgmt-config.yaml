@@ -1,0 +1,6 @@
+logging:
+    level: debug
+    #level: info
+db:
+    host: redis-master
+    port: 6379

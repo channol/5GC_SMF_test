@@ -1,0 +1,103 @@
+{
+  "supportedFeatures": "460abcd",
+  "ratType": [
+    "NR",
+    "EUTRA",
+    "WLAN",
+    "VIRTUAL"
+  ],
+  "restrictedTai": [
+    {
+      "tac": "tac811",
+      "plmnId": {
+        "mnc": "491",
+        "mcc": "811"
+      }
+    },
+    {
+      "tac": "tac811",
+      "plmnId": {
+        "mnc": "492",
+        "mcc": "811"
+      }
+    }
+  ],
+  "sPlmnId": [
+    {
+      "restrictedTai": [
+        {
+          "tac": "tac811",
+          "plmnId": {
+            "mnc": "493",
+            "mcc": "811"
+          }
+        },
+        {
+          "tac": "tac811",
+          "plmnId": {
+            "mnc": "494",
+            "mcc": "811"
+          }
+        }
+      ],
+      "restricted": false,
+      "homeSnssai": {
+        "sd": "abd002",
+        "sst": 2
+      },
+      "plmnId": {
+        "mnc": "491",
+        "mcc": "911"
+      }
+    },
+    {
+      "restrictedTai": [],
+      "restricted": false,
+      "homeSnssai": {
+        "sd": "abd003",
+        "sst": 3
+      },
+      "plmnId": {
+        "mnc": "492",
+        "mcc": "911"
+      }
+    }
+  ],
+  "hPlmnId": [
+    {
+      "restrictedTai": [
+        {
+          "tac": "tac811",
+          "plmnId": {
+            "mnc": "491",
+            "mcc": "811"
+          }
+        },
+        {
+          "tac": "tac811",
+          "plmnId": {
+            "mnc": "492",
+            "mcc": "811"
+          }
+        }
+      ],
+      "restricted": false,
+      "plmnId": {
+        "mnc": "05",
+        "mcc": "450"
+      }
+    },
+    {
+      "restrictedTai": [],
+      "restricted": true,
+      "plmnId": {
+        "mnc": "488",
+        "mcc": "910"
+      }
+    }
+  ],
+  "snssai": {
+    "sd": "abd002",
+    "sst": 2
+  }
+}

@@ -1,0 +1,64 @@
+{
+  "uemgr": {
+    "udm-sba": {
+      "root": "",
+      "port": 80,
+      "fqdn": "sim-udm"
+    },
+    "nssf-sba": {
+      "root": "",
+      "port": 80,
+      "fqdn": "sim-nssf"
+    },
+    "nrf-sba": {
+      "root": "",
+      "port": 80,
+      "fqdn": "sim-nrf"
+    },
+    "ausf-sba": {
+      "root": "",
+      "port": 80,
+      "fqdn": "sim-ausf"
+    },
+    "smf-sba": {
+      "root": "",
+      "port": 80,
+      "fqdn": "168.25.25.10"
+    },
+    "n2mgr-sba": {
+      "fqdn": "amf-n2mgr"
+    },
+    "pcf-sba": {
+      "root": "",
+      "fqdn": "",
+      "port": 80
+    }
+  },
+  "n2mgr": {
+    "n1mgr-sba": {
+      "fqdn": "amf-uemgr"
+    }
+  },
+  "common": {
+    "debug": {
+      "level": "error"
+    },
+    "db-cfg": {
+      "port": 6379,
+      "fqdn": "redis-master"
+    },
+    "amf-sba": {
+      "root": "",
+      "port": 80,
+      "fqdn": "amf-uemgr"
+    },
+    "amf-id": {
+      "amf-set-id": "015",
+      "amf-region": "48",
+      "amf-pointer": "12",
+      "mnc": "05",
+      "mcc": "450"
+    },
+    "location": "locationA"
+  }
+}

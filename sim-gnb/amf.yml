@@ -1,0 +1,60 @@
+version: "3"
+services:
+  ausf:
+    image: registry.gitlab.casa-systems.com/mobility/sim-ausf
+    networks:
+      - amf-nw
+
+  rabbitmq:
+    image: rabbitmq
+    networks:
+      - amf-nw
+    environment:
+      RABBITMQ_DEFAULT_USER: casa
+      RABBITMQ_DEFAULT_PASS: casa
+
+  udm:
+    image: registry.gitlab.casa-systems.com/mobility/sim-udm
+    networks:
+      - amf-nw
+
+  nssf:
+    image: registry.gitlab.casa-systems.com/mobility/sim-nssf
+    networks:
+      - amf-nw
+
+  nrf:
+    image: registry.gitlab.casa-systems.com/mobility/sim-nrf
+    networks:
+      - amf-nw
+
+  n2mgr:
+    image: registry.gitlab.casa-systems.com/mobility/n2mgr/n2mgr-bmo:latest
+    deploy:
+      replicas: 1
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 1G
+      restart_policy:
+        condition: on-failure
+    ports:
+      - "38412:38412/sctp"
+    networks:
+      - amf-nw
+    command: n2mgr --broker 172.170.0.2  --port 38412 --mcc 450 --mnc 05
+
+  uemgr:
+    image: registry.gitlab.casa-systems.com/mobility/uemgr
+    networks:
+      - amf-nw
+
+# Declaration of the networks
+# These are referenced by th enode above
+networks:
+  amf-nw:
+    driver: overlay
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.170.0.0/16

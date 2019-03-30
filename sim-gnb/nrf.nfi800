@@ -1,0 +1,27 @@
+{
+  "nfServices": [
+    {
+      "scheme": "schema",
+      "versions": [
+        {
+          "apiFullVersion": "version",
+          "apiVersionInUri": "uri"
+        }
+      ],
+      "serviceName": "nsmf-pdusession",
+      "serviceInstanceID": "s-123456",
+      "nfServiceStatus": "NF_REGISTERED"
+    }
+  ],
+  "fqdn": "smfsm",
+  "sNssais": [
+    {
+      "sd": "abd003",
+      "sst": 3
+    }
+  ],
+  "nfStatus": "REGISTERED",
+  "nfType": "SMF",
+  "nfInstanceID": "1800",
+  "locality": "locationA"
+}

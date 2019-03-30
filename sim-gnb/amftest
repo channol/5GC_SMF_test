@@ -1,0 +1,528 @@
+#!/bin/bash
+
+if [ $# -eq 2 ]; then
+    cmd=$1
+    scope=$2
+elif [ $# -eq 3 ]; then
+    cmd=$1
+    scope=$2
+    nf=$3
+else
+    echo $0 \<cmd\> \<scope\>
+    echo "cmd: create, delete"
+    echo "scope: all, apps, infra, sim, gnb, n2mgr, uemgr, nrf, nssf, udm, ausf"
+    echo ""
+    echo $0 config \<nf\>
+    echo "nf: all, or one of nrf, nssf, udm"
+    echo ""
+    echo $0 show config \<nf\>
+    echo "nf: all, or one of nrf, nssf, udm"
+    echo ""
+    echo $0 update image \<nf\>
+    echo "nf: all, or one of ausf, udm, nssf, nrf, n2mgr, uemgr, smf1, smf2, smf, gnb"
+    echo ""
+    echo 
+    exit
+fi
+
+[[ ! -z "$AMF_TEST_DIR" ]] || echo "You can use env variable AMF_TEST_DIR to specify dirtory of config files"
+
+# the directory of all the config files
+if [[ ! -z "$AMF_TEST_DIR" ]]; then
+    echo ""
+    echo "Use env AMF_TEST_DIR for work direcotry"
+    WORKDIR=$AMF_TEST_DIR
+else
+    WORKDIR=$PWD
+fi
+
+nwname="amf-nw"
+
+# Casa images
+AUSFIMG="registry.gitlab.casa-systems.com/mobility/sim-ausf"
+UDMIMG="registry.gitlab.casa-systems.com/mobility/sim-udm"
+NSSFIMG="registry.gitlab.casa-systems.com/mobility/sim-nssf"
+NRFIMG="registry.gitlab.casa-systems.com/mobility/sim-nrf"
+N2IMG="registry.gitlab.casa-systems.com/mobility/n2mgr"
+UEMGRIMG="registry.gitlab.casa-systems.com/mobility/uemgr"
+SMFIMG1="registry.gitlab.casa-systems.com/mobility/sim-smf/debug-ashok"
+SMFIMG2="registry.gitlab.casa-systems.com/mobility/sim-smf/debug-ashok2"
+SMFIMG="registry.gitlab.casa-systems.com/mobility/smfsm"
+GNBIMG="registry.gitlab.casa-systems.com/mobility/sim-gnb/sim-gnb-bmo"
+
+# Config files
+NRF_INI_FILE="$WORKDIR/sim-nrf.ini"
+UDM_CFG="$WORKDIR/udm.imsi123456"
+NRF_NFI_600="$WORKDIR/nrf.nfi600"
+NRF_NFI_700="$WORKDIR/nrf.nfi700"
+NRF_NFI_800="$WORKDIR/nrf.nfi800"
+NSSF_NSI1="$WORKDIR/nssf.config-nsi"
+NSSF_NSI2="$WORKDIR/nssf.config-nsi2"
+NSSF_NSI3="$WORKDIR/nssf.config-nsi3"
+NSSF_SNSSAI1="$WORKDIR/nssf.config-snssai"
+NSSF_SNSSAI2="$WORKDIR/nssf.config-snssai2"
+NSSF_SNSSAI3="$WORKDIR/nssf.config-snssai3"
+AMF_CFG="$WORKDIR/amf-config"
+UEMGR_JSON="$WORKDIR/uemgr.json"
+SIM_SMF_JSON="$WORKDIR/sim-smf.json"
+SMF_JSON="$WORKDIR/smf_cfg.json"
+
+dockerip() {
+    docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' "$@"
+}
+
+check_udm_files() {
+    declare -a arr=($UDM_CFG )
+    for file in "${arr[@]}"
+do
+    if [ ! -f $file ]; then
+        echo "$file doesn't exist"
+        exit
+    fi
+done
+}
+
+check_nrf_files() {
+    declare -a arr=( $NRF_INI_FILE $NRF_NFI_600 $NRF_NFI_700 $NRF_NFI_800 )
+    for file in "${arr[@]}"
+do
+    if [ ! -f $file ]; then
+        echo "$file doesn't exist"
+        exit
+    fi
+done
+}
+
+check_nssf_files() {
+    declare -a arr=( $NSSF_NSI1 $NSSF_NSI2 $NSSF_NSI3 $NSSF_SNSSAI1 $NSSF_SNSSAI2 $NSSF_SNSSAI3 )
+    for file in "${arr[@]}"
+do
+    if [ ! -f $file ]; then
+        echo "$file doesn't exist"
+        exit
+    fi
+done
+}
+
+check_sim_smf_files() {
+    declare -a arr=( $SIM_SMF_JSON )
+    for file in "${arr[@]}"
+do
+    if [ ! -f $file ]; then
+        echo "$file doesn't exist"
+        exit
+    fi
+done
+}
+
+check_sim_files() {
+    check_udm_files
+    check_nrf_files
+    check_nssf_files
+    check_sim_smf_files
+}
+
+check_amf_files() {
+    declare -a arr=( $AMF_CFG $UEMGR_JSON )
+    for file in "${arr[@]}"
+do
+    if [ ! -f $file ]; then
+        echo "$file doesn't exist"
+        exit
+    fi
+done
+
+}
+
+check_smf_files() {
+    declare -a arr=( $SMF_JSON )
+    for file in "${arr[@]}"
+do
+    if [ ! -f $file ]; then
+        echo "$file doesn't exist"
+        exit
+    fi
+done
+
+}
+
+
+create_infra() {
+    #network
+    [ -n "$(docker network ls | grep $nwname)" ] && docker network rm $nwname
+    docker network create --driver=bridge --subnet=168.35.25.0/24 --gateway=168.35.25.1 $nwname
+
+    #redis:
+    [ -n "$(docker container ls --all | grep redis-master)" ] && docker container rm redis-master
+    docker run -itd --network $nwname --name redis-master -p 6379:6379 redis redis-server
+
+    #RabbitMQ:
+    [ -n "$(docker container ls --all | grep rabbitmq)" ] && docker container rm rabbitmq
+    docker run   -d --network $nwname --name rabbitmq -e RABBITMQ_DEFAULT_USER=casa -e RABBITMQ_DEFAULT_PASS=casa rabbitmq
+
+    #mgmt etcd:
+    [ -n "$(docker container ls --all | grep etcd)" ] && docker container rm etcd
+    docker run -itd --network $nwname --name etcd -p 2379:2379 -p 2380:2380 -p 4001:4001 quay.io/coreos/etcd etcd -listen-client-urls http://0.0.0.0:2379 -advertise-client-urls http://etcd-srv:2379
+
+    #mgmt
+    #[ -n "$(docker container ls --all | grep amf-mgmt)" ] && docker container rm amf-mgmt
+    #docker run -itd --network $nwname --name amf-mgmt -p 8080:8080 -v /root/amf/mgmt-config.yaml:/root/config.yaml registry.gitlab.casa-systems.com/mobility/mgmt-api/nfmgmt ./nfmgmtsrvr --etcd-host etcd
+}
+
+config_nrf() {
+    check_nrf_files
+
+    #Config NRF
+    nrfaddr=$(dockerip "sim-nrf")
+    curl --retry-delay 5 --verbose -H "Content-Type: application/json" -X PUT http://$nrfaddr:80/nnrf-nfm/v1/nf-instances/600 -d @$NRF_NFI_600
+    curl --retry-delay 5 --verbose -H "Content-Type: application/json" -X PUT http://$nrfaddr:80/nnrf-nfm/v1/nf-instances/700 -d @$NRF_NFI_700
+    curl --retry-delay 5 --verbose -H "Content-Type: application/json" -X PUT http://$nrfaddr:80/nnrf-nfm/v1/nf-instances/1800 -d @$NRF_NFI_800
+
+    curl --retry-delay 5 --verbose http://$nrfaddr:80/nnrf-nfm/v1/nf-instances/600
+    curl --retry-delay 5 --verbose http://$nrfaddr:80/nnrf-nfm/v1/nf-instances/700
+    curl --retry-delay 5 --verbose http://$nrfaddr:80/nnrf-nfm/v1/nf-instances/1800
+}
+
+create_nrf() {
+    check_nrf_files
+    #NRF:
+    [ -n "$(docker container ls --all | grep sim-nrf)" ] && docker container rm sim-nrf
+    docker run -itd --network $nwname --name sim-nrf -p 80:80 -v $NRF_INI_FILE:/conf.ini $NRFIMG sim-nrf -c conf.ini
+
+    config_nrf
+}
+
+create_ausf() {
+    #AUSF:
+    [ -n "$(docker container ls --all | grep sim-ausf)" ] && docker container rm sim-ausf
+    docker run -itd --network $nwname --name sim-ausf $AUSFIMG sh
+}
+
+config_udm() {
+    #config UDM
+    udmaddr=$(dockerip "sim-udm")
+    curl --retry-delay 5 --verbose -X PUT -H "Content-Type: application/json" http://$udmaddr:80/nudm-sdm/v1/imsi-123456 -d@$UDM_CFG
+}
+
+create_udm() {
+    #UDM:
+    [ -n "$(docker container ls --all | grep sim-udm)" ] && docker container rm sim-udm
+    docker run -itd --network $nwname --name sim-udm $UDMIMG
+
+    config_udm
+}
+
+config_nssf() {
+    check_nssf_files
+
+    #config NSSF
+    nssfaddr=$(dockerip "sim-nssf")
+    curl --retry-delay 5 --verbose -d @$NSSF_NSI1 -H "Content-Type: application/json" -X POST http://$nssfaddr:80/nssf-mgmt/config-network-slice-instance
+    curl --retry-delay 5 --verbose -d @$NSSF_NSI2 -H "Content-Type: application/json" -X POST http://$nssfaddr:80/nssf-mgmt/config-network-slice-instance
+    curl --retry-delay 5 --verbose -d @$NSSF_NSI3 -H "Content-Type: application/json" -X POST http://$nssfaddr:80/nssf-mgmt/config-network-slice-instance
+
+    curl --retry-delay 5 --verbose -d @$NSSF_SNSSAI1 -H "Content-Type: application/json" POST http://$nssfaddr:80/nssf-mgmt/config-csnssai
+    curl --retry-delay 5 --verbose -d @$NSSF_SNSSAI2 -H "Content-Type: application/json" POST http://$nssfaddr:80/nssf-mgmt/config-csnssai
+    curl --retry-delay 5 --verbose -d @$NSSF_SNSSAI3 -H "Content-Type: application/json" POST http://$nssfaddr:80/nssf-mgmt/config-csnssai
+}
+
+create_nssf() {
+    #NSSF:
+    [ -n "$(docker container ls --all | grep sim-nssf)" ] && docker container rm sim-nssf
+    docker run -itd --network $nwname --name sim-nssf $NSSFIMG sim-nssf -r redis-master
+
+    config_nssf
+}
+
+config_sim() {
+    check_sim_files
+
+    #config UDM
+    config_udm
+
+    #Config NRF
+    config_nrf
+
+    #config NSSF
+    config_nssf
+}
+
+create_sim() {
+    check_sim_files
+
+    #AUSF:
+    create_ausf
+
+    #UDM:
+    create_udm
+
+    #NSSF:
+    create_nssf
+
+    #NRF:
+    create_nrf
+
+    config_sim
+}
+
+create_n2mgr() {
+    dbaddr=$(dockerip "redis-master")
+
+    #N2MGR
+    [ -n "$(docker container ls --all | grep amf-n2mgr)" ] && docker container rm amf-n2mgr
+    docker run -itd --network $nwname -P --privileged -p 38412:38412/sctp --name amf-n2mgr --entrypoint n2mgr $N2IMG --port 38412 --dbserver $dbaddr --dbport 6379 --mcc 450 --mnc 05 --uemgr amf-uemgr
+}
+
+create_uemgr() {
+    #UEMGR:
+    [ -n "$(docker container ls --all | grep amf-uemgr)" ] && docker container rm amf-uemgr
+    docker run -itd --network $nwname --name amf-uemgr -v $UEMGR_JSON:/etc/uemgr.json $UEMGRIMG
+}
+
+create_smf() {
+    check_smf_files
+    #SMF:
+    [ -n "$(docker container ls --all | grep sim-smf1)" ] && docker container rm sim-smf1
+    docker run -itd --network $nwname --name sim-smf1 -v $SIM_SMF_JSON:/etc/sim-smf.json $SMFIMG1
+
+    [ -n "$(docker container ls --all | grep sim-smf2)" ] && docker container rm sim-smf2
+    docker run -itd --network $nwname --name sim-smf2 -v $SIM_SMF_JSON:/etc/sim-smf.json $SMFIMG2
+
+    [ -n "$(docker container ls --all | grep smfsm)" ] && docker container rm smfsm
+    docker run -itd --network $nwname --name smfsm -p 8080:8080/udp -v $SMF_JSON:/etc/smf_cfg.json $SMFIMG
+}
+
+create_apps() {
+    check_amf_files
+
+    create_uemgr
+
+    create_smf
+
+    create_n2mgr
+
+}
+
+config_amf() {
+    check_amf_files
+
+    #config AMF
+    mgmtaddr=$(dockerip "amf-mgmt")
+    curl --retry-delay 5 -X PUT http://$mgmtaddr:8080/amf-mgmt/amf -H "Content-Type: application/json" -d @$AMF_CFG
+}
+
+create_gnb() {
+    N2IP=$(dockerip "amf-n2mgr")
+    export AMF_SCTP_PORT=38412
+    [ -n "$(docker container ls --all | grep sim-gnb)" ] && docker container rm sim-gnb
+    docker run -itd -e "N2IP=$N2IP" -e "AMF_SCTP_PORT=$AMF_SCTP_PORT" -p 65501:65501/tcp --privileged=true --network $nwname --name sim-gnb $GNBIMG sh
+    echo "you can use 'docker exec -it sim-gnb sh' to connect to sim-gnb"
+    echo "use 'sim-gnb -a $N2IP -h $AMF_SCTP_PORT -p 38412 -d 10.133.0.1 -n 2 -u 10 -B 65501'"
+}
+
+create_all() {
+    check_sim_files
+    check_amf_files
+    create_infra
+    create_sim
+    config_sim
+    create_apps
+    create_gnb
+}
+
+delete_n2mgr() {
+    docker stop amf-n2mgr
+}
+
+delete_uemgr() {
+    docker stop amf-uemgr
+}
+
+delete_smf() {
+    docker stop smfsm
+    docker stop sim-smf1
+    docker stop sim-smf2
+}
+
+delete_apps() {
+    delete_smf
+    delete_uemgr
+    delete_n2mgr
+}
+
+delete_nrf() {
+    docker stop sim-nrf
+}
+
+delete_ausf() {
+    docker stop sim-ausf
+}
+
+delete_sim() {
+    docker stop sim-nrf
+    docker stop sim-nssf
+    docker stop sim-udm
+    docker stop sim-ausf
+}
+
+delete_infra() {
+    #docker stop amf-mgmt
+    docker stop etcd
+    docker stop rabbitmq
+    docker stop redis-master
+    docker network rm $nwname
+}
+
+delete_gnb() {
+    docker stop sim-gnb
+}
+
+delete_all() {
+    delete_gnb
+    delete_apps
+    delete_sim
+    delete_infra
+}
+
+show_config_nrf() {
+    nrfaddr=$(dockerip "sim-nrf")
+
+    curl --retry-delay 5 http://$nrfaddr:80/nnrf-nfm/v1/nf-instances/600 | jq .
+    curl --retry-delay 5 http://$nrfaddr:80/nnrf-nfm/v1/nf-instances/700 | jq .
+    curl --retry-delay 5 http://$nrfaddr:80/nnrf-nfm/v1/nf-instances/1800 | jq .
+}
+
+show_config_nssf() {
+    nssfaddr=$(dockerip "sim-nssf")
+
+    curl --retry-delay 5 -d '{"id": "1"}' -H "Content-Type: application/json" -X POST http://$nssfaddr:80/nssf-mgmt/show-network-slice-instance | jq .
+    curl --retry-delay 5 -d '{"id": "2"}' -H "Content-Type: application/json" -X POST http://$nssfaddr:80/nssf-mgmt/show-network-slice-instance | jq .
+    curl --retry-delay 5 -d '{"id": "3"}' -H "Content-Type: application/json" -X POST http://$nssfaddr:80/nssf-mgmt/show-network-slice-instance | jq .
+
+    curl --retry-delay 5 -d '{"sst":1,"sd":"abd001"}' -H "Content-Type: application/json" -X POST http://$nssfaddr:80/nssf-mgmt/show-csnssai | jq .
+    curl --retry-delay 5 -d '{"sst":2,"sd":"abd002"}' -H "Content-Type: application/json" -X POST http://$nssfaddr:80/nssf-mgmt/show-csnssai | jq .
+    curl --retry-delay 5 -d '{"sst":3,"sd":"abd003"}' -H "Content-Type: application/json" -X POST http://$nssfaddr:80/nssf-mgmt/show-csnssai | jq .
+}
+
+show_config_udm() {
+    udmaddr=$(dockerip "sim-udm")
+
+    curl --retry-delay 5 --verbose -H "Content-Type: application/json" http://$udmaddr:80/nudm-sdm/v1/imsi-123456 | jq .
+
+    curl --retry-delay 5 --verbose -X GET http://$udmaddr:80/nudm-sdm/v1/imsi-123456?dataset-names=SMF_SEL | jq .
+    curl --retry-delay 5 --verbose -X GET http://$udmaddr:80/nudm-sdm/v1/imsi-123456?dataset-names=AM | jq .
+}
+
+pull_image_ausf() {
+    echo "pull latest $AUSFIMG"
+    docker pull $AUSFIMG
+}
+
+pull_image_udm() {
+    echo "pull latest $UDMIMG"
+    docker pull $UDMIMG
+}
+
+pull_image_nrf() {
+    echo "pull latest $NRFIMG"
+    docker pull $NRFIMG
+}
+
+pull_image_nssf() {
+    echo "pull latest $NSSFIMG"
+    docker pull $NSSFIMG
+}
+
+pull_image_n2mgr() {
+    echo "pull latest $N2IMG"
+    docker pull $N2IMG
+}
+
+pull_image_uemgr() {
+    echo "pull latest $UEMGRIMG"
+    docker pull $UEMGRIMG
+}
+
+pull_image_smf1() {
+    echo "pull latest $SMFIMG1"
+    docker pull $SMFIMG1
+}
+
+pull_image_smf2() {
+    echo "pull latest $SMFIMG2"
+    docker pull $SMFIMG2
+}
+
+pull_image_smf() {
+    echo "pull latest $SMFIMG"
+    docker pull $SMFIMG
+}
+
+pull_image_gnb() {
+    echo "pull latest $GNBIMG"
+    docker pull $GNBIMG
+}
+
+config_all() {
+    config_udm
+    config_nrf
+    config_nssf
+}
+
+show_config_all() {
+    show_config_nrf
+    show_config_nssf
+    show_config_udm
+}
+
+pull_image_all() {
+    pull_image_ausf
+    pull_image_udm
+    pull_image_nrf
+    pull_image_nssf
+    pull_image_n2mgr
+    pull_image_uemgr
+    pull_image_smf1
+    pull_image_smf2
+    pull_image_smf
+    pull_image_gnb
+}
+
+if [ $cmd == "create" ]; then
+
+    echo ""
+    echo "These are the images to be used:"
+    echo ""
+    echo "ausf:     $AUSFIMG"
+    echo "udm:      $UDMIMG"
+    echo "nssf:     $NSSFIMG"
+    echo "nrf:      $NRFIMG"
+    echo "n2mgr:    $N2IMG"
+    echo "uemgr:    $UEMGRIMG"
+    echo "sim-smf1: $SMFIMG1"
+    echo "sim-smf2: $SMFIMG2"
+    echo "smfsm:    $SMFIMG"
+    echo "gnb:      $GNBIMG"
+    echo ""
+
+    echo "All required config files should be at $WORKDIR"
+    echo ""
+
+    echo "Please check. Do you want to continue? [Y/n]"
+    read $REPLY
+    if [ $REPLY == "n" ]; then
+        exit
+    fi
+
+    # prepare for coredump
+    mkdir -p /var/crash && echo  "/var/crash/core-%e-%p-%t" > /proc/sys/kernel/core_pattern
+    create_$scope
+elif [ $cmd == "config" ]; then
+    config_$scope
+elif [ $cmd == "delete" ]; then
+    delete_$scope
+elif [ $cmd == "show" ] && [ $scope == "config" ]; then
+    show_config_$nf
+elif [ $cmd == "update" ] && [ $scope == "image" ]; then
+    pull_image_$nf
+fi

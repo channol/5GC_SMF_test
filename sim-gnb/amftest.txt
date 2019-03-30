@@ -1,0 +1,170 @@
+Get a docker container IP:
+=================================
+
+alias dockerip="docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}'"
+alias dockerlog="docker container logs "
+
+network:
+docker network create --driver=bridge --subnet=168.25.25.0/24 --gateway=168.25.25.1 amf-nw
+
+redis:
+docker run -itd --rm --network amf-nw --name redis-master -p 6379:6379 redis redis-server
+
+// RabbitMQ:
+// docker run --network amf-nw -d --name rabbitmq -e RABBITMQ_DEFAULT_USER=casa -e RABBITMQ_DEFAULT_PASS=casa rabbitmq
+
+mgmt etcd:
+docker run -itd --rm --network amf-nw --name etcd -p 2379:2379 -p 2380:2380 -p 4001:4001 quay.io/coreos/etcd etcd -listen-client-urls http://0.0.0.0:2379 -advertise-client-urls http://etcd-srv:2379
+
+mgmt:
+docker run -itd --rm --network amf-nw --name amf-mgmt -p 8080:8080 -v /root/amf/mgmt-config.yaml:/root/config.yaml registry.gitlab.casa-systems.com/mobility/mgmt-api/nfmgmt ./nfmgmtsrvr --etcd-host etcd
+curl -X PUT http://`dockerip amf-mgmt`:8080/amf-mgmt/amf -H "Content-Type: application/json" -d @amf-config
+curl -X GET http://`dockerip amf-mgmt`:8080/amf-mgmt/amf
+curl -X DELETE http://`dockerip amf-mgmt`:8080/amf-mgmt/amf
+
+// etcd browser:
+// docker run -itd --network amf-nw --name etcd-browser -p 8082:8080 -e ENDPOINTS=etcd:2379 registry.cn-hangzhou.aliyuncs.com/ringtail/lucas:0.0.1
+
+// connect to redis-server via redis-cli
+// docker run -it --network amf-nw --link redis-master:redis --rm redis redis-cli -h redis -p 6379
+
+AUSF:
+docker run --network amf-nw -itd --rm --name sim-ausf registry.gitlab.casa-systems.com/mobility/sim-ausf
+
+UDM:
+docker run -itd --rm --network amf-nw --name sim-udm registry.gitlab.casa-systems.com/mobility/sim-udm
+
+NSSF:
+docker run -itd --rm --network amf-nw --name sim-nssf registry.gitlab.casa-systems.com/mobility/sim-nssf sim-nssf -r redis-master
+
+NRF:
+docker run -itd --rm --network amf-nw --name sim-nrf -p 80:80 -v /root/amf/sim-nrf.ini:/conf.ini registry.gitlab.casa-systems.com/mobility/sim-nrf sim-nrf -c conf.ini
+
+N2MGR:
+docker run -itd --rm -P --privileged -p 38412:38412/sctp --network amf-nw --name amf-n2mgr --entrypoint n2mgr registry.gitlab.casa-systems.com/mobility/n2mgr:demo-phase2 --port 38412 --dbserver `dockerip redis-master` --dbport 6379 --mcc 460 --mnc 01 --uemgr amf-uemgr
+
+UEMGR:
+docker run -itd --rm --network amf-nw --name amf-uemgr -v /root/amf/uemgr.json:/etc/uemgr.json registry.gitlab.casa-systems.com/mobility/uemgr:demo-phase2
+
+SIM-SMF:
+docker run -itd --rm --network amf-nw --name sim-smf1 -v /root/amf/sim-smf.json:/etc/sim-smf.json registry.gitlab.casa-systems.com/mobility/sim-smf/debug-ashok
+docker run -itd --rm --network amf-nw --name sim-smf2 -v /root/amf/sim-smf.json:/etc/sim-smf.json registry.gitlab.casa-systems.com/mobility/sim-smf/debug-ashok2
+
+Config UDM, NRF, NSSF now
+
+Config UDM:
+===================
+
+curl --verbose -X PUT -H "Content-Type: application/json" http://`dockerip sim-udm`:80/udm-configure/sdm/v1/imsi-123456 -d @udm.imsi123456
+
+GET ue data from UDM:
+curl --verbose -X GET http://`dockerip sim-udm`:80/udm-configure/sdm/v1/imsi-123456
+
+
+Config NRF:
+====================
+
+curl --verbose -H "Content-Type: application/json" -X PUT http://`dockerip sim-nrf`:80/nnrf-nfm/v1/nf-instances/600 -d @nrf.nfi600
+curl --verbose -H "Content-Type: application/json" -X PUT http://`dockerip sim-nrf`:80/nnrf-nfm/v1/nf-instances/700 -d @nrf.nfi700
+curl --verbose -H "Content-Type: application/json" -X PUT http://`dockerip sim-nrf`:80/nnrf-nfm/v1/nf-instances/800 -d @nrf.nfi800
+
+Query the data:
+curl --verbose http://`dockerip sim-nrf`:80/nnrf-nfm/v1/nf-instances/600 | jq .
+
+Config NSSF:
+=====================
+
+config network-slice-instance: nsi
+
+curl --verbose -d @nssf.config-nsi -H "Content-Type: application/json" -X POST http://`dockerip sim-nssf`:80/nssf-mgmt/config-network-slice-instance
+curl --verbose -d @nssf.config-nsi2 -H "Content-Type: application/json" -X POST http://`dockerip sim-nssf`:80/nssf-mgmt/config-network-slice-instance
+curl --verbose -d @nssf.config-nsi3 -H "Content-Type: application/json" -X POST http://`dockerip sim-nssf`:80/nssf-mgmt/config-network-slice-instance
+
+curl --verbose -d '{"id": "1"}' -H "Content-Type: application/json" -X POST http://`dockerip sim-nssf`:80/nssf-mgmt/show-network-slice-instance
+curl --verbose -d '{"id": "1"}' -H "Content-Type: application/json" -X POST http://`dockerip sim-nssf`:80/nssf-mgmt/delete-network-slice-instance
+
+Config CSnssai:
+
+curl --verbose -d @nssf.config-snssai -H "Content-Type: application/json" POST http://`dockerip sim-nssf`:80/nssf-mgmt/config-csnssai
+curl --verbose -d @nssf.config-snssai2 -H "Content-Type: application/json" POST http://`dockerip sim-nssf`:80/nssf-mgmt/config-csnssai
+curl --verbose -d @nssf.config-snssai3 -H "Content-Type: application/json" POST http://`dockerip sim-nssf`:80/nssf-mgmt/config-csnssai
+
+curl --verbose -d '{"sst":1,"sd":"abd001"}' -H "Content-Type: application/json" -X POST http://`dockerip sim-nssf`:80/nssf-mgmt/show-csnssai
+curl --verbose -d '{"sst":1,"sd":"abd001"}' -H "Content-Type: application/json" -X POST http://`dockerip sim-nssf`:80/nssf-mgmt/delete-csnssai
+
+
+
+
+==================================
+SIM-GNB:
+
+docker run --rm -itd -p 65501:65501/tcp --network amf-nw --name sim-gnb registry.gitlab.casa-systems.com/mobility/sim-gnb
+docker exec -it sim-gnb sh
+sim-gnb -a 168.35.25.9 -h 38412 -p 38412 -c 192.168.1.1 -d 10.133.0.1 -n 20 -u 50 -B 65501
+diag> start 0
+diag> reg 0
+diag> ule 0 0 5 3 inet1
+==================================
+
+health check (from sim-urf):
+curl --verbose --http2-prior-knowledge -X GET http://amf-uemgr:80/health
+
+
+
+
+Config nsi-selection policy (optional):
+
+curl --verbose -d '{"nsiMax":30,"method":"FIRST"}'  -H "Content-Type: application/json" POST http://`dockerip sim-nssf`:80/nssf-mgmt/config-nsi-select-policy
+curl --verbose -d '{"id": "1"}' -H "Content-Type: application/json" -X POST http://`dockerip sim-nssf`:80/nssf-mgmt/show-nsi-select-policy
+curl --verbose -d '{"id": "1"}' -H "Content-Type: application/json" -X POST http://`dockerip sim-nssf`:80/nssf-mgmt/delete-nsi-select-policy
+
+
+
+SMFSM:
+docker run -itd  --rm --network amf-nw --name smfsm -p 8080:8080/udp -v /root/amf/smf_cfg.json:/etc/smf_cfg.json registry.gitlab.casa-systems.com/mobility/smfsm
+
+
+For SMF following are the steps:
+/root/smf/smf_cfg.json
+{
+    "svc_fqdn" : "smfsm",
+    "svc_port" : 80,
+    "smf_id"   : "smfsm",
+    "bind"     : "eth0",
+    "mq_addr"  : "rabbitmq",
+    "mq_port"  : 5672,
+    "db_addr"  : "redis-master",
+    "etcd_addr": "etcd",
+    "etcd_port": 2379,
+    "upf_addr" : "10.10.13.130",
+    "n4_port"  : 8805,
+    "udm_svc_fqdn" : "168.25.25.5",
+    "udm_svc_port" : 80,
+    "dnn1" :{
+                    "dnn" : "inet1",
+                    "ip_pool" : "v4_inet",
+                    "ip_pool_addr_start" : "10.10.0.1",
+                    "ip_pool_addr_end" : "10.10.254.253"
+            },
+    "dnn2" :{
+                    "dnn" : "URLLC",
+                    "ip_pool" : "v4_URLLC",
+                    "ip_pool_addr_start" : "10.20.0.1",
+                    "ip_pool_addr_end" : "10.20.254.253"
+            },
+    "dnn3" :{
+                    "dnn" : "eMBB",
+                    "ip_pool" : "v4_eMBB",
+                    "ip_pool_addr_start" : "20.20.0.1",
+                    "ip_pool_addr_end" : "20.20.254.253"
+            }
+}
+smf configuration in uemgr.json
+
+"SMF-ROOT":"",
+"SMF-ADDRESS":"168.25.25.10",
+"SMF-PORT":80,
+
+root@docker-vm:~# docker run -it  --rm --network amf-nw --name smfsm -p 8080:8080/udp -v /root/smf/smf_cfg.json:/etc/smf_cfg.json registry.gitlab.casa-systems.com/mobility/smfsm
+
+

@@ -1,0 +1,186 @@
+{
+  "SmsSubscriptionData": {
+    "smsSupported": false
+  },
+  "IdTranslationResult": {
+    "gpsi": "msisdn-123456",
+    "supi": "imsi-123456",
+    "supportedFeatures": "supportedFeature1"
+  },
+  "SmsManagementSubscriptionData": {
+    "moSmsBarringRoaming": false,
+    "moSmsBarringAll": false,
+    "moSmsSubscribed": true,
+    "mtSmsBarringRoaming": false,
+    "mtSmsBarringAll": false,
+    "mtSmsSubscribed": true,
+    "supportedFeatures": "supportedFeature1"
+  },
+  "SessionManagementSubscriptionData": {
+    "dnnConfiguration": {
+      "staticIpAddress": {
+        "ipv6Prefix": "3ff",
+        "ipv6Addr": "2001:0db8:85a3:0000:0000:8a2e:0370:7334",
+        "ipv4Addr": "10.10.10.10"
+      },
+      "_3gppChargingCharacteristics": "_3gppChargingCharacteristics",
+      "sessionAmbr": {
+        "downlink": "200Mbps",
+        "uplink": "100Mbps"
+      },
+      "_5gQosProfile": {
+        "arp": {
+          "preemptionVuln": "preemptionVuln",
+          "preemptionCap": "preemptionCap",
+          "priorityLevel": 1
+        },
+        "_5qi": 1
+      },
+      "ladnIndicator": true,
+      "sscModes": {
+        "allowedSscMode": [
+          "SSC_MODE_2"
+        ],
+        "defaultSscMode": "SSC_MODE_1"
+      },
+      "pduSessionTypes": {
+        "allowedSessionType": [
+          "IPV4V6"
+        ],
+        "defaultSessionType": "IPV4V6"
+      },
+      "dnn": "dnn1"
+    },
+    "singleNssai": {
+      "sd": "abd001",
+      "sst": 1
+    }
+  },
+  "UeContextInSmfData": {
+    "PduSession": [
+      {
+        "smfAddress": {
+          "ipv6Prefix": "3ff",
+          "ipv6Addr": "2001:0db8:85a3:0000:0000:8a2e:0370:7334",
+          "ipv4Addr": "10.10.10.10"
+        },
+        "smfId": "smfID10",
+        "dnn": "dnn10",
+        "pduSessionId": 10
+      }
+    ]
+  },
+  "SubscriptionDataSets": {
+    "smfSelData": {
+      "subscribedSnssaiInfo": [
+        {
+          "dnnInfos": [
+            {
+              "iboRoamingAllowed": true,
+              "defaultDnnIndicator": true,
+              "dnn": "dnn1"
+            },
+            {
+              "iboRoamingAllowed": false,
+              "defaultDnnIndicator": false,
+              "dnn": "dnn2"
+            }
+          ],
+          "singleNssai": {
+            "sd": "abd001",
+            "sst": 1
+          }
+        }
+      ],
+      "supportedFeatures": "supportedFeature1"
+    },
+    "amData": {
+      "dlPacketCount": 203,
+      "activeTime": 201,
+      "mpsPriority": false,
+      "ladnInformation": [
+        "ladnInformation"
+      ],
+      "ueUsageType": 202,
+      "subsRegTimer": 101,
+      "rfspIndex": 100,
+      "supportedFeatures": "supportedFeature1",
+      "gpsis": [
+        "msisdn-654321",
+        "msisdn-54322"
+      ],
+      "internalGroupIds": [
+        "internalGroupId1",
+        "internalGroupId2"
+      ],
+      "subscribedUeAmbr": {
+        "downlink": "200Mbps",
+        "uplink": "100Mbps"
+      },
+      "nssai": {
+        "singleNssais": [
+          {
+            "sd": "abd002",
+            "sst": 2
+          },
+          {
+            "sd": "abd003",
+            "sst": 3
+          }
+        ],
+        "defaultSingleNssais": [
+          {
+            "sd": "abd001",
+            "sst": 1
+          }
+        ],
+        "supportedFeatures": "supportedFeatures"
+      },
+      "ratRestrictions": [
+        "NR",
+        "EUTRA"
+      ],
+      "areaRestrictions": [
+        {
+          "ratTypes": [
+            "NR"
+          ],
+          "areaInformation": {
+            "maxNumderTAs": 2,
+            "areaCodes": [
+              "areaCodes1",
+              "areaCodes2"
+            ],
+            "tacs": [
+              "tacs1",
+              "tacs2"
+            ]
+          },
+          "restrictionType": "environment"
+        },
+        {
+          "ratTypes": [
+            "EUTRA"
+          ],
+          "areaInformation": {
+            "maxNumderTAs": 2,
+            "areaCodes": [
+              "areaCodes1",
+              "areaCodes2"
+            ],
+            "tacs": [
+              "tacs22",
+              "tacs33"
+            ]
+          },
+          "restrictionType": "lot"
+        }
+      ],
+      "coreNetworkTypeRestrictions": [
+        "5GC"
+      ]
+    }
+  },
+  "gpsi": "msisdn-654321",
+  "supi": "imsi-123456"
+}

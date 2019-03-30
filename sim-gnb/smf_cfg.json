@@ -1,0 +1,42 @@
+{
+    "svc_fqdn" : "smfsm",
+    "svc_port" : 80,
+    "smf_id"   : "smfsm",
+    "bind"     : "eth0",
+    "mq_addr"  : "168.35.25.3",
+    "mq_port"  : 5672,
+    "mq_user_name" : "casa",
+    "mq_passwd" : "casa",
+    "db_addr"  : "168.35.25.2",
+    "db_port"  : 6379,
+    "metric_port" : 8081,
+    "metric_path" : "/metrics",
+    "etcd_addr": "168.35.25.4",
+    "etcd_port": 2379,
+    "n4_port"  : 8805,
+    "udm_svc_fqdn" : "168.35.25.6",
+    "udm_svc_port" : 80,
+    "log_level": "debug",
+    "mgmt_svc_port" : 8585,
+    "dnn1" :{
+                    "dnn" : "inet1",
+                    "upf_addr" : "10.13.1.48",
+                    "ip_pool" : "v4_inet",
+                    "ip_pool_addr_start" : "10.10.0.1",
+                    "ip_pool_addr_end" : "10.10.254.253"
+            },
+    "dnn2" :{
+                    "dnn" : "URLLC",
+                    "upf_addr" : "10.13.1.48",
+                    "ip_pool" : "v4_URLLC",
+                    "ip_pool_addr_start" : "10.20.0.1",
+                    "ip_pool_addr_end" : "10.20.254.253"
+            },
+    "dnn3" :{
+                    "dnn" : "eMBB",
+                    "upf_addr" : "10.13.1.48",
+                    "ip_pool" : "v4_eMBB",
+                    "ip_pool_addr_start" : "20.20.0.1",
+                    "ip_pool_addr_end" : "20.20.254.253"
+            }
+}

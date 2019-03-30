@@ -1,0 +1,46 @@
+{
+  "supportedFeatures": "910abcd",
+  "default": true,
+  "ratType": [
+    "NR",
+    "EUTRA",
+    "WLAN",
+    "VIRTUAL"
+  ],
+  "nfSets": [
+    {
+      "nfId": [
+        "50",
+        "amf-1",
+        "AMF-1",
+        "AMF_1"
+      ],
+      "nfType": "AMF",
+      "setId": "set1"
+    },
+    {
+      "nfId": [
+        "smf-1",
+        "SMF-1",
+        "SMF_1"
+      ],
+      "nfType": "SMF",
+      "setId": "set2"
+    },
+    {
+      "nfId": [
+        "300",
+        "NRF-1",
+        "NRF_1"
+      ],
+      "nfType": "NRF",
+      "setId": "set3"
+    }
+  ],
+  "sNssai": [
+    {
+      "sd": "abd002",
+      "sst": 2
+    }
+  ]
+}
