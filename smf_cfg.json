@@ -1,5 +1,5 @@
 {
-    "svc_fqdn" : "172.17.0.2",
+    "svc_fqdn" : "172.17.0.3",
     "svc_port" : 80,
     "smf_id"   : "smfsm",
     "bind"     : "eth0",
@@ -10,7 +10,7 @@
     "etcd_addr": "172.17.0.5",
     "etcd_port": 2379,
     "n4_port"  : 8805,
-    "udm_svc_fqdn" : "172.17.0.3",
+    "udm_svc_fqdn" : "172.17.0.2",
     "udm_svc_port" :  8080,
     "mgmt_svc_port" : 8585,
     "dnn1" :{
@@ -19,10 +19,12 @@
                     "ip_pool" : "v4_inet",
                     "ip_pool_addr_start" : "10.10.0.1",
                     "ip_pool_addr_end" : "10.10.254.253",
-                    "pcf_svc_fqdn" : "172.17.0.3",
+                    "pcf_svc_fqdn" : "172.17.0.2",
                     "pcf_port" : 8888,
-                    "chf_svc_fqdn" : "172.17.0.3",
-                    "chf_port" : 5848
+                    "chf_svc_fqdn" : "172.17.0.2",
+                    "chf_port" : 5848,
+                    "nrf_svc_fqdn" : "162.35.25.8",
+                    "nrf_port" : 80
             },
     "dnn2" :{
                     "dnn" : "URLLC",
@@ -30,10 +32,12 @@
                     "ip_pool" : "v4_URLLC",
                     "ip_pool_addr_start" : "20.10.0.1",
                     "ip_pool_addr_end" : "20.10.254.253",
-                    "pcf_svc_fqdn" : "172.17.0.3",
+                    "pcf_svc_fqdn" : "172.17.0.2",
                     "pcf_port" : 8888,
-                    "chf_svc_fqdn" : "172.17.0.3",
-                    "chf_port" : 5848
+                    "chf_svc_fqdn" : "172.17.0.2",
+                    "chf_port" : 5848,
+                    "nrf_svc_fqdn" : "162.35.25.8",
+                    "nrf_port" : 80
             },
     "dnn3" :{
                     "dnn" : "eMBB",
@@ -41,10 +45,12 @@
                     "ip_pool" : "v4_eMBB",
                     "ip_pool_addr_start" : "30.10.0.1",
                     "ip_pool_addr_end" : "30.10.254.253",
-                    "pcf_svc_fqdn" : "172.17.0.3",
+                    "pcf_svc_fqdn" : "172.17.0.2",
                     "pcf_port" : 8888,
-                    "chf_svc_fqdn" : "172.17.0.3",
-                    "chf_port" : 5848
+                    "chf_svc_fqdn" : "172.17.0.2",
+                    "chf_port" : 5848,
+                    "nrf_svc_fqdn" : "162.35.25.8",
+                    "nrf_port" : 80
              },
     "ltmap1": {
                 "locality": "DC-1",
